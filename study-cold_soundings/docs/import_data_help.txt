@@ -1,0 +1,13 @@
+http://stackoverflow.com/questions/15317929/load-contents-in-text-files-to-sqlite-table
+
+D:\test>sqlite3 test.db
+SQLite version 3.6.23
+Enter ".help" for instructions
+Enter SQL statements terminated with a ";"
+sqlite> create table myTable(nameOfText TEXT, contents TEXT);
+sqlite> .separator ","
+sqlite> .import test.txt myTable
+sqlite> select * from myTable;
+name1,content1
+name2,content2
+sqlite>
