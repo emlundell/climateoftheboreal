@@ -1,0 +1,5 @@
+
+
+# URL to get sounding data of Fairbanks, AK (~69 MB)
+https://www1.ncdc.noaa.gov/pub/data/igra/data/data-por/USM00070261-data.txt.zip
+ftp://ftp.ncdc.noaa.gov/pub/data/igra/data/data-por/USM00070261-data.txt.zip
