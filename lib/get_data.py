@@ -12,9 +12,9 @@ import os
 def soundings(query, db):
 
     # Read sqlite query results into a pandas DataFrame
-    abs_path = os.path.dirname(os.path.abspath(__file__))
-    print("Connecting to {0}/data/{1}".format(abs_path, db))
-    con = sqlite3.connect("{0}/data/{1}".format(abs_path, db))
+    home_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+    print("Connecting to {0}/data/soundings/{1}".format(home_path, db))
+    con = sqlite3.connect("{0}/data/soundings/{1}".format(home_path, db))
     df = pd.read_sql_query(query, con)
 
     # verify that result of SQL query is stored in the dataframe

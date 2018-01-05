@@ -29,10 +29,11 @@ RUN apt-get install -y tar \
                     libsqlite3-dev \
                     vim
 
-# install Python and pip package manager
+# install system Python related stuff
 RUN apt-get install -y python3-dev \
                        python-distribute \
-                       python3-pip
+                       python3-pip \
+                       python3-tk
 
 # intall useful and/or required Python libraries to run your script
 RUN pip3 install matplotlib \
@@ -43,6 +44,9 @@ RUN pip3 install matplotlib \
                 sklearn \
                 python-dateutil \
                 gensim
+
+# Add /climate/lib/ to python path
+ENV PYTHONPATH=/climate/lib/:$PYTHONPATH
 
 # We are going to bind mount the bin/data to the container to create some persistence
 # Don't forget to, on container run startup, "--mount type=bind,source=[path_to_climate],target=/climate"
