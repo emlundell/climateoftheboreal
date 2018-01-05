@@ -26,7 +26,8 @@ RUN apt-get install -y tar \
                     net-tools \
                     build-essential \
                     sqlite3 \
-                    libsqlite3-dev
+                    libsqlite3-dev \
+                    vim
 
 # install Python and pip package manager
 RUN apt-get install -y python3-dev \
@@ -43,5 +44,5 @@ RUN pip3 install matplotlib \
                 python-dateutil \
                 gensim
 
-COPY bin/ /climate/bin/
-COPY data/ /climate/data/
+# We are going to bind mount the bin/data to the container to create some persistence
+# Don't forget to, on container run startup, "--mount type=bind,source=[path_to_climate],target=/climate"

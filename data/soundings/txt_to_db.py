@@ -3,8 +3,9 @@
 from __future__ import print_function
 import sqlite3
 import os
-import re
 import sys
+import argparse
+import datetime
 
 """
     txt_to_db.py './soundings/USM00070261-data-beg2016.txt/USM00070261-data.txt' 'soundings-2016'
@@ -15,18 +16,30 @@ import sys
     Results: found in data/DB/ where the DB has two tables - meta and levels.
 
 
-"""	 
-# Might add in command line options later.  But let's manully change it for now.
-#path = './soundings/USM00070261-data-beg2016.txt'
-#db_name = 'soundings-2016' + '.db'
-path = './soundings/USM00070261-data.txt'
-db_name = 'soundings-all.db'
+"""
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("file", help="Sounding data in text format")
+parser.add_argument("db_name", help="Name of sqlite DB file")
+parser.add_argument("-t", "--time_range", default="18000101_21000101", help="time range to filter soundings (YYYYMMDD_YYYYMMDD)")
+args = parser.parse_args()
+
+path = args.file  # 'USM00070261-data.txt'
+db_name = args.db_name  # 'soundings-all.db'
+
+start, end = args.time_range.split("_")
+
+time_start = datetime.datetime.strptime(start, "%Y%m%d")
+time_end = datetime.datetime.strptime(end, "%Y%m%d")
+
 
 def nullify(value, check):
     if int(value) in check:
         return None
     else:
         return value
+
 
 # Make sure that the total levels given is the same as said in the metadata
 row_num = 0
@@ -156,26 +169,29 @@ with open(path, 'r') as file:
                 'LON': line[63:71]
             }
 
-            try:
+            if time_start <= datetime.datetime(int(level['YEAR']), int(level['MONTH']), int(level['DAY'])) <= time_end:
 
-                c.execute('''
-                    insert into meta values 
-                    (Null,:ID,:YEAR,:MONTH,:DAY,:HOUR,:RELTIME,
-                        :NUMLEV,:P_SRC,:NP_SRC,:LAT,:LON)''', level)
-                idpk = c.lastrowid
-            except:
-                print(line)
-                raise
+                try:
+                    c.execute('''
+                        insert into meta values 
+                        (Null,:ID,:YEAR,:MONTH,:DAY,:HOUR,:RELTIME,
+                            :NUMLEV,:P_SRC,:NP_SRC,:LAT,:LON)''', level)
+                    idpk = c.lastrowid
+                except:
+                    print(line)
+                    raise
 
-            #print("Meta rowid = {0}".format(idpk))
-            #conn.commit()
+                total_level_lines = int(level['NUMLEV'])
 
-            total_level_lines = int(level['NUMLEV'])
+                level_lines = 0
 
-            level_lines = 0
+                read = True
+
+            else:
+                read = False
 
         # Levels
-        else:
+        elif read:
 
             """
                 30 -9999  -9999   250 -9999 -9999 -9999    90    20
@@ -220,13 +236,6 @@ with open(path, 'r') as file:
                 'WDIR': nullify(line[40:45], [-9999, -8888]), # -9999, -8888
                 'WSPD': nullify(line[46:51], [-9999, -8888]) # -9999, -8888
             }
-
-
-            '''
-            print(line)
-            for i in ['idfk','LVLTYP1','LVLTYP2','ETIME','PRESS','PFLAG','GPH','ZFLAG','TEMP','TFLAG','RH','DPDP','WDIR','WSPD']:
-                print(i, level[i])
-            '''
 
             try:
                 c.execute('''
