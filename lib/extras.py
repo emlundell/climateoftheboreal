@@ -1,75 +1,88 @@
 #!/bin/env python
-#extras.py
-
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import numpy as np
-from scipy.optimize import curve_fit
-
+# extras.py
 
 '''
-	Custom fitting methods
+    Custom fitting methods
 '''
 '''
 def get_sine_fit(series):
 
-	x = range(len(series))
-	y = series
+    x = range(len(series))
+    y = series
 
-	def fit_func(x, a, b, c):
-	    return a*np.sin(b*x) + c
+    def fit_func(x, a, b, c):
+        return a*np.sin(b*x) + c
 
-	params = curve_fit(fit_func, x, y)
+    params = curve_fit(fit_func, x, y)
 
-	[a, b, c] = params[0]
-	print(a,b,c)
+    [a, b, c] = params[0]
+    print(a,b,c)
 
-	return a*np.sin(b*x) + c
+    return a*np.sin(b*x) + c
 '''
 
+
+def since_bc(dates):
+
+    from datetime import datetime
+
+    if type(dates) is not list:
+        dates = [dates]
+
+    return [(datetime.strptime(d, "%Y-%m-%d") - datetime(1, 1, 1)).days for d in dates]
+
+
 def get_taylor_sine_fit(series):
- 	
-	if type(series) is not list:
-		raise Exception("argument 'series' needs to be of type list")
+    if type(series) is not list:
+        raise Exception("argument 'series' needs to be of type list")
 
-	x = np.linspace(0, 2*len(series), len(series)/2.0)
-	y = series
+    import numpy as np
+    from scipy.optimize import curve_fit
 
-	def fit_func(p, a, b, c, d):
-		fit = p - a*np.power(p,3) + b*np.power(p,5) - c*np.power(p,7) + d
-		print("fit", fit)
-		return fit
+    x = np.linspace(0, 2 * len(series), len(series) / 2.0)
+    y = series
 
-	params = curve_fit(fit_func, x, y)
+    def fit_func(p, a, b, c, d):
+        fit = p - a * np.power(p, 3) + b * np.power(p, 5) - c * np.power(p, 7) + d
+        print("fit", fit)
+        return fit
 
-	[a,b,c,d] = params[0]
-	[aa,bb,cc] = [2*3, 2*3*4*5, 2*3*4*5*6*7]
+    params = curve_fit(fit_func, x, y)
 
-	print("Values {0} compared to ideal {1}".format([a,b,c], [1.0/aa,1.0/bb,1.0/cc]))
+    [a, b, c, d] = params[0]
+    [aa, bb, cc] = [2 * 3, 2 * 3 * 4 * 5, 2 * 3 * 4 * 5 * 6 * 7]
 
-	return fit_func(x, a, b, c, d)
+    print("Values {0} compared to ideal {1}".format([a, b, c], [1.0 / aa, 1.0 / bb, 1.0 / cc]))
+
+    return fit_func(x, a, b, c, d)
+
 
 '''
     Custom color maps
 '''
 
+
 def get_yearly():
+    '''
+            'yearly' color map
+        '''
 
-		'''
-			'yearly' color map
-		'''
-		# sample the colormaps that you want to use. Use 128 from each so we get 256
-		# colors in total
-		_colors1 = plt.cm.viridis(np.linspace(0., 1, 128))
-		_colors2 = plt.cm.viridis_r(np.linspace(0, 1, 128))
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+    import numpy as np
 
-		# combine them and build a new colormap
-		_colors = np.vstack((_colors1, _colors2))
+    # sample the colormaps that you want to use. Use 128 from each so we get 256
+    # colors in total
+    _colors1 = plt.cm.viridis(np.linspace(0., 1, 128))
+    _colors2 = plt.cm.viridis_r(np.linspace(0, 1, 128))
 
-		return mcolors.LinearSegmentedColormap.from_list('yearly', _colors)
+    # combine them and build a new colormap
+    _colors = np.vstack((_colors1, _colors2))
+
+    return mcolors.LinearSegmentedColormap.from_list('yearly', _colors)
 
 
 class ccmaps():
-
-	yearly = get_yearly()
-
+    yearly = get_yearly()
