@@ -24,12 +24,25 @@ def get_sine_fit(series):
 
 def since_bc(dates):
 
-    from datetime import datetime
+    import datetime as dt
+    import pandas
+
+    if type(dates) is pandas.Series:
+        dates = list(dates)
 
     if type(dates) is not list:
         dates = [dates]
 
-    return [(datetime.strptime(d, "%Y-%m-%d") - datetime(1, 1, 1)).days for d in dates]
+    try:
+        try:
+            dl = lambda x: dt.datetime.strptime(x, "%Y-%m-%d") - dt.datetime(1, 1, 1)
+            return [dl(d).total_seconds() / dt.timedelta(days=1).total_seconds() for d in dates]
+        except:
+            dl = lambda x: dt.datetime.strptime(x, "%Y-%m-%d-%H") - dt.datetime(1, 1, 1, 0)
+            return [dl(d).total_seconds() / dt.timedelta(days=1).total_seconds() for d in dates]
+    except:
+        print("Problem in since_bc")
+        raise
 
 
 def get_taylor_sine_fit(series):
@@ -63,9 +76,6 @@ def get_taylor_sine_fit(series):
 
 
 def get_yearly():
-    '''
-            'yearly' color map
-        '''
 
     import matplotlib
     matplotlib.use('Agg')

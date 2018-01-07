@@ -1,2 +1,3 @@
-*.gz
-*.lite
+*
+!*.py
+!.gitignore

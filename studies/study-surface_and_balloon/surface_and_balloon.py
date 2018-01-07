@@ -7,13 +7,15 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from get_data import soundings
+from get_data import surface
 from extras import since_bc
 
+# Sounding temp
 # Read sqlite query results into a pandas DataFrame
-db = "soundings-all.db"
+db = "soundings-70261.db"
 query = '''
     select
-        substr('0000' || m.year, -4) || '-' || substr('0' || m.month, -2) || '-' || substr('0' || m.day, -2) as DOY, 
+        substr('0000' || m.year, -4) || '-' || substr('0' || m.month, -2) || '-' || substr('0' || m.day, -2) as DATE, 
         v.gph, 
         v.press/10.0 as PRESS, 
         v.TEMP/10.0 as TEMP 
@@ -27,11 +29,32 @@ query = '''
 df = soundings(query, db)
 
 # Graph
-#x_arr = df['GPH']
 x_arr = df['TEMP']
-y_arr = since_bc(list(df['DOY']))
+y_arr = since_bc(df['DATE'])
 
 plt.plot_date(y_arr, x_arr)
 plot_name = "sounding_test_{0}.png".format(randint(0, 10000))
+#plt.savefig(plot_name)
+print("Saved to {0}".format(plot_name))
+
+
+# Ground temp
+db = "ground-70261.db"
+query = '''
+    select
+        g.DATE as DATE, 
+        g.TEMP/10.0 as TEMP
+    from ground g
+    where g.hour = 0
+'''
+
+df = surface(query, db)
+
+# Graph
+x_arr = df['TEMP']
+y_arr = since_bc(df['DATE'])
+
+plt.plot_date(y_arr, x_arr)
+plot_name = "ground_test_{0}.png".format(randint(0, 10000))
 plt.savefig(plot_name)
 print("Saved to {0}".format(plot_name))

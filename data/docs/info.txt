@@ -9,3 +9,4 @@ ftp://ftp.ncdc.noaa.gov/pub/data/noaa/2018/702610-26411-2018.gz
 
 # URL to get 2018 Integrated Surface Database (ISD) "lite" data for Fairbanks, AK
 https://www1.ncdc.noaa.gov/pub/data/noaa/isd-lite/2018/702610-26411-2018.gz
+

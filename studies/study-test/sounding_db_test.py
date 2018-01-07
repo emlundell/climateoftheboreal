@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from get_data import soundings
 
 # Read sqlite query results into a pandas DataFrame
-db = "soundings-all.db"
+db = "soundings-70261.db"
 query = '''
     select
         cast(strftime('%j', 2016 || '-' || substr('0' || m.month, -2) || '-' || substr('0' || m.day, -2) ) as int) as DOY, 
