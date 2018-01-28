@@ -45,9 +45,15 @@ RUN pip3 install matplotlib \
                 python-dateutil \
                 gensim
 
+RUN pip3 install pyyaml
+
+RUN alias python=python3
+
 # Add /climate/lib/ to python path
 ENV PYTHONPATH=/climate/lib/:$PYTHONPATH
 ENV HOME=/climate/
+
+WORKDIR /climate/
 
 # We are going to bind mount the bin/data to the container to create some persistence
 # Don't forget to, on container run startup, "--mount type=bind,source=[path_to_climate],target=/climate"
