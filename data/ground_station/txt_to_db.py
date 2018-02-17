@@ -41,6 +41,8 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
     print("Enter ground_station.txt_to_db.main...")
     print("Using args: {0}, {1}, {2}, {3}".format(path, db_name, time_start, time_end))
 
+    station_id = os.path.basename(path)[0:6]  # 702610
+
     time_start = datetime.datetime.strptime(time_start, "%Y%m%d")
     time_end = datetime.datetime.strptime(time_end, "%Y%m%d")
 
@@ -70,7 +72,8 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
     try:
         # Create tables
         c.execute('''CREATE TABLE ground
-            (   DATE text PRIMARY KEY,
+            (   pkid integer PRIMARY KEY,
+                HASH text,
                 ID text, --702610
                 YEAR integer,
                 MONTH integer,
@@ -85,7 +88,7 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                 LIQUID_ONE integer,
                 LIQUID_SIX integer)''')
     except:
-        print("Could not create table. DOES IT ALREADY EXIST?")
+        print("Could not create table 'ground'. DOES IT ALREADY EXIST?")
 
     conn.commit()
 
@@ -99,6 +102,8 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
         for row_num, line in enumerate(file):
 
             '''
+            pkid INTEGER PRIMARY KEY
+            HASH text,
             ID text, --702610
             DATE text,
             YEAR integer,
@@ -120,8 +125,8 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
 
             try:
                 ground = {
-                    'DATE': "{0}-{1}-{2}-{3}".format(line[0:4].strip(), line[5:7].strip(), line[8:10].strip(), line[11:13].strip()),
-                    'ID': 702610,
+                    'HASH': "{0}{1}{2}{3}{4}".format(station_id, line[0:4].strip(), line[5:7].strip(), line[8:10].strip(), line[11:13].strip()),
+                    'ID': station_id,
                     'YEAR': line[0:4],
                     'MONTH': line[5:7],
                     'DAY': line[8:10],
@@ -147,20 +152,21 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                 try:
                     c.execute('''
                         insert or replace into ground values (
-                            :DATE,
-                            coalesce((select ID from ground where date = :DATE), :ID),
-                            coalesce((select YEAR from ground where date = :DATE), :YEAR),
-                            coalesce((select MONTH from ground where date = :DATE), :MONTH),
-                            coalesce((select DAY from ground where date = :DATE), :DAY),
-                            coalesce((select HOUR from ground where date = :DATE), :HOUR),
-                            coalesce((select TEMP from ground where date = :DATE), :TEMP),
-                            coalesce((select DEW from ground where date = :DATE), :DEW),
-                            coalesce((select MSL from ground where date = :DATE), :MSL),
-                            coalesce((select WIND_DIR from ground where date = :DATE), :WIND_DIR),
-                            coalesce((select WIND_SPEED from ground where date = :DATE), :WIND_SPEED),
-                            coalesce((select CLOUD from ground where date = :DATE), :CLOUD),
-                            coalesce((select LIQUID_ONE from ground where date = :DATE), :LIQUID_ONE),
-                            coalesce((select LIQUID_SIX from ground where date = :DATE), :LIQUID_SIX)
+                            null,
+                            :HASH,
+                            coalesce((select ID from ground where hash = :HASH), :ID),
+                            coalesce((select YEAR from ground where hash = :HASH), :YEAR),
+                            coalesce((select MONTH from ground where hash = :HASH), :MONTH),
+                            coalesce((select DAY from ground where hash = :HASH), :DAY),
+                            coalesce((select HOUR from ground where hash = :HASH), :HOUR),
+                            coalesce((select TEMP from ground where hash = :HASH), :TEMP),
+                            coalesce((select DEW from ground where hash = :HASH), :DEW),
+                            coalesce((select MSL from ground where hash = :HASH), :MSL),
+                            coalesce((select WIND_DIR from ground where hash = :HASH), :WIND_DIR),
+                            coalesce((select WIND_SPEED from ground where hash = :HASH), :WIND_SPEED),
+                            coalesce((select CLOUD from ground where hash = :HASH), :CLOUD),
+                            coalesce((select LIQUID_ONE from ground where hash = :HASH), :LIQUID_ONE),
+                            coalesce((select LIQUID_SIX from ground where hash = :HASH), :LIQUID_SIX)
                         )
                     ''', ground)
                 except:

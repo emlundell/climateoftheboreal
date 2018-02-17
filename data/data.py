@@ -1,7 +1,7 @@
 import os
 import argparse
-import urllib.request
 
+import wget
 import yaml
 
 
@@ -21,14 +21,14 @@ class Data():
 
         self.db_file = os.path.join(self.abs_path, self.get_data_yaml['db_name'])
 
-        self.grounds_list = grounds_list
-        self.sounds_list = sounds_list
+        self.grounds_list = grounds_list or []
+        self.sounds_list = sounds_list or []
 
         print("Args: {0}, {1}, {2}".format(self.db_file, self.grounds_list, self.sounds_list))
 
     def get_ground(self):
         print("Get ground station data...")
-        from ground_station import txt_to_db as read_ground
+        from ground_station.txt_to_db import main as read_ground
 
         try:
             groundings = self.get_data_yaml['ground']
@@ -41,13 +41,13 @@ class Data():
             if name in self.grounds_list:
                 path_to_parse = os.path.join(self.abs_path, 'ground_station', os.path.basename(url))
                 print("Downloading {0} to {1} for {2}".format(url, path_to_parse, name))
-                urllib.request.urlretrieve(url, path_to_parse)
-
-                read_ground.main(path_to_parse, self.db_file)
+                wget.download(url, out=path_to_parse)
+                print("\n")
+                read_ground(path_to_parse, self.db_file)
 
     def get_sounds(self):
         print("Get soundings data...")
-        from soundings import txt_to_db as read_sound
+        from soundings.txt_to_db import main as read_sound
 
         try:
             soundings = self.get_data_yaml['soundings']
@@ -55,8 +55,14 @@ class Data():
             soundings = []
 
         for sound in soundings:
-            pass
-            #read_sound()
+            url = sound['url']
+            name = sound['name']
+            if name in self.sounds_list:
+                path_to_parse = os.path.join(self.abs_path, 'soundings', os.path.basename(url))
+                print("Downloading {0} to {1} for {2}".format(url, path_to_parse, name))
+                #wget.download(url, path_to_parse)
+                print("\n")
+                read_sound(path_to_parse, self.db_file)
 
 
 def main(grounds_list=None, sounds_list=None):
@@ -67,12 +73,13 @@ def main(grounds_list=None, sounds_list=None):
     data = Data(grounds_list, sounds_list)
 
     data.get_ground()
-    #data.get_sounds()
+    data.get_sounds()
 
     print("Exit data.py")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    # Refactor into subcommands
     parser.add_argument("--grounds", help="Comma list of ground_station short names to be downloaded.")
     parser.add_argument("--sounds", help="Comma list of soundings short names to be downloaded.")
     args = parser.parse_args()

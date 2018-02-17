@@ -45,9 +45,8 @@ RUN pip3 install matplotlib \
                 python-dateutil \
                 gensim
 
-RUN pip3 install pyyaml
+RUN pip3 install pyyaml wget
 
-RUN alias python=python3
 
 # Add /climate/lib/ to python path
 ENV PYTHONPATH=/climate/lib/:$PYTHONPATH
