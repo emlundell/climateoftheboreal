@@ -31,6 +31,12 @@ def nullify(value, check, msg=None):
 
 def main(path, db_name, time_start='18000101', time_end='21000101'):
 
+    if isinstance(time_start, str):
+        time_start = datetime.datetime.strptime(time_start, "%Y%m%d")
+
+    if isinstance(time_end, str):
+        time_end = datetime.datetime.strptime(time_end, "%Y%m%d")
+
     if ".zip" in path:
         with zipfile.ZipFile(path,"r") as zip_ref:
             zip_ref.extractall()
@@ -47,47 +53,45 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
     # Make new DB
     conn = sqlite3.connect(db_name)
     conn.execute("PRAGMA foreign_keys = 1")
+    conn.execute("PRAGMA JOURNAL_MODE = OFF")
+    conn.execute("PRAGMA TEMP_STORE = MEMORY")
     c = conn.cursor()
 
     # Create tables
-    try:
-        c.execute('''CREATE TABLE meta
-            (   pkid integer PRIMARY KEY,
-                HASH text,
-                ID text,
-                YEAR integer,
-                MONTH integer,
-                DAY integer,
-                HOUR integer,
-                RELTIME integer,
-                NUMLEV integer,
-                P_SRC text,
-                NP_SRC text,
-                LAT integer,
-                LON integer)''')
-    except:
-        print("Could not create table 'meta'. DOES IT ALREADY EXIST?")
+    c.execute('''CREATE TABLE IF NOT EXISTS meta
+        (
+            HASH text UNIQUE,
+            ID text,
+            YEAR integer,
+            MONTH integer,
+            DAY integer,
+            HOUR integer,
+            RELTIME integer,
+            NUMLEV integer,
+            P_SRC text,
+            NP_SRC text,
+            LAT integer,
+            LON integer
+        )''')
 
-    try:
-        c.execute('''CREATE TABLE levels
-            (   idpk integer PRIMARY KEY,
-                HASH text,
-                LVLTYP1 integer,
-                LVLTYP2 integer,
-                ETIME integer,
-                PRESS integer,
-                PFLAG text,
-                GPH integer,
-                ZFLAG text,
-                TEMP integer,
-                TFLAG text,
-                RH integer,
-                DPDP integer,
-                WDIR integer,
-                WSPD integer,
-                FOREIGN KEY (idfk) REFERENCES meta(HASH))''')
-    except:
-        print("Could not create table 'levels'. DOES IT ALREADY EXIST?")
+    c.execute('''CREATE TABLE IF NOT EXISTS levels
+        (
+            HASH text,
+            LVLTYP1 integer,
+            LVLTYP2 integer,
+            ETIME integer,
+            PRESS integer,
+            PFLAG text,
+            GPH integer,
+            ZFLAG text,
+            TEMP integer,
+            TFLAG text,
+            RH integer,
+            DPDP integer,
+            WDIR integer,
+            WSPD integer,
+            FOREIGN KEY (HASH) REFERENCES meta(HASH)
+        )''')
 
     conn.commit()
 
@@ -101,27 +105,11 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
     with open(path, 'r') as file:
         for line in file:
 
-            # The negative should always be preceded by a space if followed by a number.
-            #print("BEFORE: {0}".format(line))
-            #line = re.sub(r'(\-\d)', r' \1', line)
-            #print("After: {0}".format(line))
-
             # Meta
             if line[0] == '#':
 
                 if level_lines != total_level_lines:
                     raise Exception("Bad level line number")
-
-                '''
-                # Is index 8 a number? If yes, duplicate 7 to 8
-                try:
-                    if int(meta[8]):
-                        place = meta[7]
-                        meta.insert(8, place)
-                        print("Warning: copying index 8 to 7 to '{0}'".format(meta))
-                except:
-                    raise Exception("Bad index at 8 for line '{0}'".format(meta))
-                '''
 
                 """
                     ['#USM00070261', '2016', '01', '01', '00', '2303', '183', 'ncdc-nws', 'ncdc-nws', '648161', '-1478767']
@@ -152,7 +140,7 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
 
                 try:
                     level = {
-                        'HASH': "{0}{1}".format(line[0:23].strip(), nullify(line[24:26], [99], 'meta hash {}'.format(line[0:23].strip()))),
+                        'HASH': "{0}".format(line[0:26].replace(' ', '').replace('#', '')),
                         'ID': line[0:12],
                         'YEAR': line[13:17],
                         'MONTH': line[18:20],
@@ -176,7 +164,6 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                     try:
                         c.execute('''
                             insert or replace into meta values(
-                                null,
                                 :HASH,
                                 coalesce((select ID from meta where hash = :HASH), :ID),
                                 coalesce((select YEAR from meta where hash = :HASH), :YEAR),
@@ -191,7 +178,7 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                                 coalesce((select LON from meta where hash = :HASH), :LON)
                             )
                         ''', level)
-                        meta_idpk = c.lastrowid
+                        meta_hash = level['HASH']
                     except:
                         print(line)
                         raise
@@ -235,8 +222,7 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                 """
 
                 level = {
-
-                    'HASH': "{0}{1}".format(meta_idpk, nullify(line[3:8], [-9999, -8888], "levels hash {}".format(meta_idpk))),
+                    'HASH': meta_hash,
                     'LVLTYP1': line[0],
                     'LVLTYP2': line[1],
                     'ETIME': nullify(line[3:8], [-9999, -8888]),  # -9999, -8888
@@ -255,7 +241,6 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                 try:
                     c.execute('''
                         insert or replace into levels values (
-                            null,
                             :HASH,
                             coalesce((select LVLTYP1 from levels where hash = :HASH), :LVLTYP1),
                             coalesce((select LVLTYP2 from levels where hash = :HASH), :LVLTYP2),
@@ -269,8 +254,9 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                             coalesce((select RH from levels where hash = :HASH), :RH),
                             coalesce((select DPDP from levels where hash = :HASH), :DPDP),
                             coalesce((select WDIR from levels where hash = :HASH), :WDIR),
-                            coalesce((select WSPD from levels where hash = :HASH), :WSPD),
-                        )''', level)
+                            coalesce((select WSPD from levels where hash = :HASH), :WSPD)
+                        )
+                    ''', level)
                 except:
                     raise
 
@@ -298,3 +284,5 @@ if __name__ == "__main__":
 
     time_start = datetime.datetime.strptime(start, "%Y%m%d")
     time_end = datetime.datetime.strptime(end, "%Y%m%d")
+
+    main(path, db_name, time_start, time_end)

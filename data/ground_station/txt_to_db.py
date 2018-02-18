@@ -38,13 +38,16 @@ def nullify(value, check):
 
 def main(path, db_name, time_start='18000101', time_end='21000101'):
 
+    if isinstance(time_start, str):
+        time_start = datetime.datetime.strptime(time_start, "%Y%m%d")
+
+    if isinstance(time_end, str):
+        time_end = datetime.datetime.strptime(time_end, "%Y%m%d")
+
     print("Enter ground_station.txt_to_db.main...")
     print("Using args: {0}, {1}, {2}, {3}".format(path, db_name, time_start, time_end))
 
     station_id = os.path.basename(path)[0:6]  # 702610
-
-    time_start = datetime.datetime.strptime(time_start, "%Y%m%d")
-    time_end = datetime.datetime.strptime(time_end, "%Y%m%d")
 
     if ".zip" in path:
         print("Unzipping...")
