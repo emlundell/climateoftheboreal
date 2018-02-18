@@ -20,13 +20,18 @@ import zipfile
 """
 
 
-def nullify(value, check, msg=None):
-    if int(value) in check:
-        if msg is not None:
-            print("{0} has been nullified".format(msg))
-        return None
-    else:
-        return value
+def nullify(value, check):
+    try:
+        if int(value) in check:
+            return 'null'
+        else:
+            return value
+    except:  # Assume str
+        if str(value) in check:
+            return 'null'
+        else:
+            return value
+
 
 
 def main(path, db_name, time_start='18000101', time_end='21000101'):
@@ -50,50 +55,8 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
     # Primary key of meta table to be added to levels
     idpk = None
 
-    # Make new DB
-    conn = sqlite3.connect(db_name)
-    conn.execute("PRAGMA foreign_keys = 1")
-    conn.execute("PRAGMA JOURNAL_MODE = OFF")
-    conn.execute("PRAGMA TEMP_STORE = MEMORY")
-    c = conn.cursor()
-
-    # Create tables
-    c.execute('''CREATE TABLE IF NOT EXISTS meta
-        (
-            HASH text UNIQUE,
-            ID text,
-            YEAR integer,
-            MONTH integer,
-            DAY integer,
-            HOUR integer,
-            RELTIME integer,
-            NUMLEV integer,
-            P_SRC text,
-            NP_SRC text,
-            LAT integer,
-            LON integer
-        )''')
-
-    c.execute('''CREATE TABLE IF NOT EXISTS levels
-        (
-            HASH text,
-            LVLTYP1 integer,
-            LVLTYP2 integer,
-            ETIME integer,
-            PRESS integer,
-            PFLAG text,
-            GPH integer,
-            ZFLAG text,
-            TEMP integer,
-            TFLAG text,
-            RH integer,
-            DPDP integer,
-            WDIR integer,
-            WSPD integer,
-            FOREIGN KEY (HASH) REFERENCES meta(HASH)
-        )''')
-
-    conn.commit()
+    meta_statements = ""
+    levels_statements = ""
 
     # Get total lines (this may take a while)
     line_count = 0
@@ -101,9 +64,13 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
         line_count = sum(1 for _ in f)
     print("total lines: {0}".format(line_count))
 
+    print("Starting...{0}".format(datetime.datetime.now()))
+
     # Open ./soundings/*
     with open(path, 'r') as file:
         for line in file:
+            #if row_num == 10:
+            #    break
 
             # Meta
             if line[0] == '#':
@@ -140,7 +107,7 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
 
                 try:
                     level = {
-                        'HASH': "{0}".format(line[0:26].replace(' ', '').replace('#', '')),
+                        'HASH': "{0}{1}".format(line[0:26].replace(' ', '').replace('#', ''), line[27:31]),
                         'ID': line[0:12],
                         'YEAR': line[13:17],
                         'MONTH': line[18:20],
@@ -162,22 +129,9 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                 if time_start <= datetime.datetime(int(level['YEAR']), int(level['MONTH']), int(level['DAY'])) <= time_end:
 
                     try:
-                        c.execute('''
-                            insert or replace into meta values(
-                                :HASH,
-                                coalesce((select ID from meta where hash = :HASH), :ID),
-                                coalesce((select YEAR from meta where hash = :HASH), :YEAR),
-                                coalesce((select MONTH from meta where hash = :HASH), :MONTH),
-                                coalesce((select DAY from meta where hash = :HASH), :DAY),
-                                coalesce((select HOUR from meta where hash = :HASH), :HOUR),
-                                coalesce((select RELTIME from meta where hash = :HASH), :RELTIME),
-                                coalesce((select NUMLEV from meta where hash = :HASH), :NUMLEV),
-                                coalesce((select P_SRC from meta where hash = :HASH), :P_SRC),
-                                coalesce((select NP_SRC from meta where hash = :HASH), :NP_SRC),
-                                coalesce((select LAT from meta where hash = :HASH), :LAT),
-                                coalesce((select LON from meta where hash = :HASH), :LON)
-                            )
-                        ''', level)
+                        meta_statements += """
+('{HASH}', '{ID}', {YEAR}, {MONTH}, {DAY}, {HOUR}, {RELTIME}, {NUMLEV},
+'{P_SRC}', '{NP_SRC}', {LAT}, {LON}),""".format(**level)
                         meta_hash = level['HASH']
                     except:
                         print(line)
@@ -231,7 +185,7 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                     'GPH': nullify(line[16:21], [-9999, -8888]),  # -9999, -8888
                     'ZFLAG': line[21],
                     'TEMP': nullify(line[22:27], [-9999, -8888]),  # -9999, -8888
-                    'TFLAG': line[27],
+                    'TFLAG': nullify(line[27], [' ']),
                     'RH': nullify(line[28:33], [-9999, -8888]),  # -9999, -8888
                     'DPDP': nullify(line[34:39], [-9999, -8888]),  # -9999, -8888
                     'WDIR': nullify(line[40:45], [-9999, -8888]),  # -9999, -8888
@@ -239,24 +193,8 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
                 }
 
                 try:
-                    c.execute('''
-                        insert or replace into levels values (
-                            :HASH,
-                            coalesce((select LVLTYP1 from levels where hash = :HASH), :LVLTYP1),
-                            coalesce((select LVLTYP2 from levels where hash = :HASH), :LVLTYP2),
-                            coalesce((select ETIME from levels where hash = :HASH), :ETIME),
-                            coalesce((select PRESS from levels where hash = :HASH), :PRESS),
-                            coalesce((select PFLAG from levels where hash = :HASH), :PFLAG),
-                            coalesce((select GPH from levels where hash = :HASH), :GPH),
-                            coalesce((select ZFLAG from levels where hash = :HASH), :ZFLAG),
-                            coalesce((select TEMP from levels where hash = :HASH), :TEMP),
-                            coalesce((select TFLAG from levels where hash = :HASH), :TFLAG),
-                            coalesce((select RH from levels where hash = :HASH), :RH),
-                            coalesce((select DPDP from levels where hash = :HASH), :DPDP),
-                            coalesce((select WDIR from levels where hash = :HASH), :WDIR),
-                            coalesce((select WSPD from levels where hash = :HASH), :WSPD)
-                        )
-                    ''', level)
+                    levels_statements += """
+('{HASH}', {LVLTYP1}, {LVLTYP2}, {ETIME}, {PRESS}, '{PFLAG}', {GPH}, '{ZFLAG}', {TEMP}, {TFLAG}, {RH}, {DPDP}, {WDIR}, {WSPD}),""".format(**level)
                 except:
                     raise
 
@@ -266,7 +204,64 @@ def main(path, db_name, time_start='18000101', time_end='21000101'):
             print("Row number: {0}/{1}  {2}%".format(row_num, line_count, 100.0*row_num/float(line_count)), end="\r")
             sys.stdout.flush()
 
+    # Make new DB
+    conn = sqlite3.connect(db_name)
+    conn.execute("PRAGMA foreign_keys = 1")
+    c = conn.cursor()
+
+    # Create tables
+    c.execute('''CREATE TABLE meta
+        (
+            HASH text UNIQUE,
+            ID text,
+            YEAR integer,
+            MONTH integer,
+            DAY integer,
+            HOUR integer,
+            RELTIME integer,
+            NUMLEV integer,
+            P_SRC text,
+            NP_SRC text,
+            LAT integer,
+            LON integer
+        )''')
+
+    print("Execute many meta...{0}".format(datetime.datetime.now()))
+    stm = """
+insert into meta
+('HASH', 'ID', 'YEAR', 'MONTH', 'DAY', 'HOUR', 'RELTIME', 'NUMLEV', 'P_SRC', 'NP_SRC', 'LAT', 'LON') VALUES
+{0}""".format(meta_statements[0:-1])
+    c.execute(stm)
     conn.commit()
+
+    c.execute('''CREATE TABLE levels
+        (
+            HASH text,
+            LVLTYP1 integer,
+            LVLTYP2 integer,
+            ETIME integer,
+            PRESS integer,
+            PFLAG text,
+            GPH integer,
+            ZFLAG text,
+            TEMP integer,
+            TFLAG text,
+            RH integer,
+            DPDP integer,
+            WDIR integer,
+            WSPD integer,
+            FOREIGN KEY (HASH) REFERENCES meta(HASH)
+        )''')
+
+    print("Execute many levels....{0}".format(datetime.datetime.now()))
+    stm = """
+insert into levels
+('HASH', 'LVLTYP1', 'LVLTYP2', 'ETIME', 'PRESS', 'PFLAG', 'GPH', 'ZFLAG', 'TEMP', 'TFLAG', 'RH', 'DPDP', 'WDIR', 'WSPD') VALUES
+{0}""".format(levels_statements[0:-1])
+    c.execute(stm)
+    conn.commit()
+
+    print("Done...{0}".format(datetime.datetime.now()))
     conn.close()
 
 if __name__ == "__main__":
