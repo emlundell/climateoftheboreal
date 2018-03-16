@@ -22,7 +22,7 @@ def nullify(value, check):
 
 def sounding(data, file_meta):
 
-    db_name, time_start, time_end = file_meta
+    db_name, time_start, time_end, time0 = file_meta
 
     meta_statements = ""
     levels_statements = ""
@@ -123,6 +123,15 @@ def sounding(data, file_meta):
         #print("Done...{0}".format(datetime.datetime.now()))
         conn.close()
 
+        return datetime.datetime.now() - time0, time0
+
+done = 0
+def job_done(times):
+    global done
+    done += 1
+    if not done % 1000:
+        print("Number of jobs done {0} since {1}: {2}".format(times[0], times[1], done))
+
 
 def main(file_name='USM00070261-data.txt', db_name='multisounding.db', time_start='18000101', time_end='21000101'):
 
@@ -208,7 +217,7 @@ def main(file_name='USM00070261-data.txt', db_name='multisounding.db', time_star
             p2 = next(pos_2)
         except:
             p2 = -1
-        jobs.append(pool.apply_async(sounding, (data[p1:p2], (db_name, time_start, time_end))))
+        jobs.append(pool.apply_async(sounding, (data[p1:p2], (db_name, time_start, time_end, time0)), callback=job_done))
 
     # clean up
     print("Close and Join. Time since started: {0}".format(datetime.datetime.now() - time0))
