@@ -1,0 +1,7 @@
+*
+!.gitignore
+!data/placeholder.txt
+!db/placeholder.txt
+!docker-compose.yaml
+!radiosonde.py
+!README.md
