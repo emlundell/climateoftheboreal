@@ -84,10 +84,10 @@ def parse_header(row):
 
     # Ingest header into DB
     header_query = """
-        mutation insert_header {
+        mutation upsert_header {
           insert_header(
             objects: [
-              {
+            {
                 header_id: "$header_id",
                 hour: $hour,
                 lat: $lat,
@@ -100,7 +100,12 @@ def parse_header(row):
                 p_src: "$p_src",
                 reltime: $reltime,
                 year: $year
-              }]
+            }
+            ],
+            on_conflict: {
+                constraint: header_pkey,
+                update_columns: []
+            }
           ) {
             returning {
               header_id,
@@ -150,8 +155,9 @@ def parse_level(header_id, row):
 
     # Ingest levels into DB
     level_query = """
-        mutation insert_levels {
-          insert_levels(objects: [
+        mutation upsert_levels {
+          insert_levels(
+            objects: [
             {
                 dpdp: $dpdp,
                 etime: $etime,
@@ -167,11 +173,16 @@ def parse_level(header_id, row):
                 wdir: $wdir,
                 wspd: $wspd,
                 zflag: "$zflag"
+            }],
+            on_conflict: {
+                constraint: levels_pkey,
+                update_columns: []
             }
           ) {
-            returning:
+            returning {
                 header_id,
                 level_id
+            }
           }
         }
     """
@@ -202,9 +213,13 @@ def make_query(query, variables):
 
     request = requests.post(url, json={'query': json_query})
     if request.status_code == 200:
-        return request.json()
+        ret = request.json()
+        try:
+            return ret['data']
+        except:
+            raise Exception(f"Query failed to run: {ret}")
     else:
-        raise Exception(f"Query failed to run by returning code of {request.status_code}. {query}")
+        raise Exception(f"Query failed to run by returning code of {request.status_code}. {json_query}")
 
 def setup_db():
     """
@@ -225,7 +240,8 @@ def setup_db():
     """
 
     """
-        CREATE TABLE levels (
+        CREATE TABLE
+        levels (
             level_id SERIAL PRIMARY KEY,
             header_id TEXT REFERENCES header(header_id),
             lvltyp1 INT,
