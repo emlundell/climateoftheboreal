@@ -1,6 +1,6 @@
 *
 !.gitignore
-!data/placeholder.txt
+!data/db_sym
 !db/placeholder.txt
 !docker-compose.yaml
 !radiosonde.py

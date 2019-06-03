@@ -4,10 +4,8 @@ import argparse
 import hashlib
 from time import localtime, strftime, mktime
 from datetime import timedelta
-import string
-import ast
 
-import requests
+import ../lib/graphql as gq
 
 class Parser():
 
@@ -40,9 +38,8 @@ class Parser():
 
     def line_add_one(self):
         self.line_count += 1
-        if self.line_count % 10 == 0:
+        if self.line_count % 1000 == 0:
             print(f"Processed line {self.line_count} of {self.total_num_lines}")
-            exit()
 
 def parse_header(row):
     """
@@ -115,7 +112,7 @@ def parse_header(row):
         }
     """
 
-    ret = make_query(header_query, header)
+    ret = gq.make_query(header_query, header)
 
     return header['header_id'], header['numlev']
 
@@ -187,7 +184,7 @@ def parse_level(header_id, row):
         }
     """
 
-    ret = make_query(level_query, level)
+    ret = gq.make_query(level_query, level)
 
 def parse_and_ingest(file_name):
 
@@ -203,23 +200,6 @@ def parse_and_ingest(file_name):
             for r in range(0, num_lev):
                 parse_level(header_id, f.read(53))  # Includes newline at end
                 parse.line_add_one()
-
-# https://stackoverflow.com/a/50514619
-def make_query(query, variables):
-
-    url = "http://localhost:8080/v1/graphql"
-
-    json_query = string.Template(query).substitute(variables)
-
-    request = requests.post(url, json={'query': json_query})
-    if request.status_code == 200:
-        ret = request.json()
-        try:
-            return ret['data']
-        except:
-            raise Exception(f"Query failed to run: {ret}")
-    else:
-        raise Exception(f"Query failed to run by returning code of {request.status_code}. {json_query}")
 
 def setup_db():
     """

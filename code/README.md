@@ -17,10 +17,11 @@ Make sure that docker engine is installed and running
 https://docs.hasura.io/1.0/graphql/manual/getting-started/docker-simple.html
 
 1. wget https://raw.githubusercontent.com/hasura/graphql-engine/master/install-manifests/docker-compose/docker-compose.yaml
-1. Change value of _service.postgres.volumes.db_data_ to proper _data_ directory.
-1. docker-compose up -d
-1. docker ps
+1. Change value of _service.postgres.volumes to _${pwd}/data/db_sym/:/var/lib/postgresql/_
+1. _docker-compose up -d_
+1. _docker ps_
 1. http://localhost:8080/console
+1. To shutdown servers: _docker-compose down_
 
 
 # Ingest Radiosonde data
@@ -39,21 +40,54 @@ https://docs.hasura.io/1.0/graphql/manual/getting-started/docker-simple.html
 1. Put zip file in _data_ directory and unzip
 
 
-## Run radiosonde.py
+## Setup python env
 
 1. Install pipenv (if needed)
-  `pip3 install --user pipenv`
-  `export PATH="${HOME}/.local/bin:$PATH"`
+
+  ```bash
+  pip3 install --user pipenv
+  export PATH="${HOME}/.local/bin:$PATH"
+  ```
 
 1. Initialize pipenv environment (if needed)
-  `pip3 --version`
-  `sudo pipenv --python 3.6`
+
+  ```bash
+  pip3 --version
+  sudo pipenv --python 3.6
+  ```
 
 1. Install dependencies
-  `sudo pipenv install requests`
+  `sudo pipenv install requests jupyter`
 
-1. To uninstall pipenv environments
+1. To uninstall pipenv environments:
+
   `sudo pipenv --rm`
 
 1. Start pipenv shell
-  `sudo pipenv shell`
+
+  `pipenv shell`
+
+1. Set some python paths. Need to do this whenever a new shell is created
+
+  `export PYTHONPATH=$PYTHONPATH:$HOME/GIT/climateoftheboreal/lib/`
+
+
+## Ingest radiosonde
+
+1. Run Ingest
+
+  `python3 radionsonde.py -f {name_of_file}`
+
+
+## Do some studies
+
+1. Go to the _Studies_ folder.
+
+1. Run `jupyter notebook`
+
+1. To perform a DB query:
+  ```python3
+  import graphql as gq
+  query = {}
+  ret = gq.make_query(query)
+  ```

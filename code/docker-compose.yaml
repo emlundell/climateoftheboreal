@@ -4,7 +4,7 @@ services:
     image: postgres
     restart: always
     volumes:
-    - db_data:/home/eric/GIT/climateoftheboreal/code/data/
+    - /home/eric/GIT/climateoftheboreal/code/data/db_sym/:/var/lib/postgresql/
   graphql-engine:
     image: hasura/graphql-engine:v1.0.0-beta.2
     ports:
@@ -17,5 +17,3 @@ services:
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
       ## uncomment next line to set an admin secret
       # HASURA_GRAPHQL_ADMIN_SECRET: myadminsecretkey
-volumes:
-  db_data:
