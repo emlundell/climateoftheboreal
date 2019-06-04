@@ -5,7 +5,7 @@ import hashlib
 from time import localtime, strftime, mktime
 from datetime import timedelta
 
-import ../lib/graphql as gq
+import graphql as gq
 
 class Parser():
 
@@ -41,6 +41,14 @@ class Parser():
         if self.line_count % 1000 == 0:
             print(f"Processed line {self.line_count} of {self.total_num_lines}")
 
+def nullify(value, nully):
+    if not isinstance(nully, list):
+        nully = [nully]
+
+    if value in nully:
+        return 'null'
+    return value
+
 def parse_header(row):
     """
     HEADREC       1-  1  Character
@@ -68,8 +76,8 @@ def parse_header(row):
         'year': int(row[13:17]),
         'month': int(row[18:20]),
         'day': int(row[21:23]),
-        'hour': int(row[24:26]),
-        'reltime': int(row[27:31]),
+        'hour': nullify(int(row[24:26]), 99),
+        'reltime': nullify(int(row[27:31]), 9999),
         'numlev': int(row[32:36]),
         'p_src': str(row[37:45]),
         'np_src': str(row[46:54]),
@@ -112,7 +120,7 @@ def parse_header(row):
         }
     """
 
-    ret = gq.make_query(header_query, header)
+    gq.query(header_query, header)
 
     return header['header_id'], header['numlev']
 
@@ -137,17 +145,17 @@ def parse_level(header_id, row):
         'header_id': header_id,
         'lvltyp1': int(row[0]),
         'lvltyp2': int(row[1]),
-        'etime': int(row[3:8]),
-        'press': int(row[9:15]),
+        'etime': nullify(int(row[3:8]), [-9999, -8888]),
+        'press': nullify(int(row[9:15]), -9999),
         'pflag': str(row[15]),
-        'gph': int(row[16:21]),
+        'gph': nullify(int(row[16:21]), [-9999, -8888]),
         'zflag': str(row[21]),
-        'temp': int(row[22:27]),
+        'temp': nullify(int(row[22:27]), [-9999, -8888]),
         'tflag': str(row[27]),
-        'rh': int(row[28:33]),
-        'dpdp': int(row[34:39]),
-        'wdir': int(row[40:45]),
-        'wspd': int(row[46:51])
+        'rh': nullify(int(row[28:33]), [-9999, -8888]),
+        'dpdp': nullify(int(row[34:39]), [-9999, -8888]),
+        'wdir': nullify(int(row[40:45]), [-9999, -8888]),
+        'wspd': nullify(int(row[46:51]), [-9999, -8888])
     }
 
     # Ingest levels into DB
@@ -184,7 +192,7 @@ def parse_level(header_id, row):
         }
     """
 
-    ret = gq.make_query(level_query, level)
+    gq.query(level_query, level)
 
 def parse_and_ingest(file_name):
 
@@ -217,9 +225,7 @@ def setup_db():
             lat INT,
             lon INT
         );
-    """
 
-    """
         CREATE TABLE
         levels (
             level_id SERIAL PRIMARY KEY,

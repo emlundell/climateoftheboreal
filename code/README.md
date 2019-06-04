@@ -49,6 +49,8 @@ https://docs.hasura.io/1.0/graphql/manual/getting-started/docker-simple.html
   export PATH="${HOME}/.local/bin:$PATH"
   ```
 
+1. Make sure you are that repo's root. Pipenv uses the cwd for the virtual env naming.
+
 1. Initialize pipenv environment (if needed)
 
   ```bash
@@ -57,7 +59,7 @@ https://docs.hasura.io/1.0/graphql/manual/getting-started/docker-simple.html
   ```
 
 1. Install dependencies
-  `sudo pipenv install requests jupyter`
+  `sudo pipenv install requests jupyter pandas cufflinks plotly`
 
 1. To uninstall pipenv environments:
 
@@ -70,6 +72,8 @@ https://docs.hasura.io/1.0/graphql/manual/getting-started/docker-simple.html
 1. Set some python paths. Need to do this whenever a new shell is created
 
   `export PYTHONPATH=$PYTHONPATH:$HOME/GIT/climateoftheboreal/lib/`
+
+1. Make sure that postgres and Hasura are running
 
 
 ## Ingest radiosonde
