@@ -4,8 +4,8 @@ import argparse
 import hashlib
 from time import localtime, strftime, mktime
 from datetime import timedelta
-
-import graphql as gq
+import json
+import csv
 
 class Parser():
 
@@ -49,7 +49,7 @@ def nullify(value, nully):
         return 'null'
     return value
 
-def parse_header(row):
+def parse_header(row, file):
     """
     HEADREC       1-  1  Character
     ID            2- 12  Character
@@ -68,63 +68,34 @@ def parse_header(row):
     So convert ID-YEAR-MONTH-DAY-HOUR to hash and take first 11 digits. This should be unique but deterministic enough.
     """
 
-    if str(row[0]) != '#':
-        raise Exception(f"Expected '#' at start of header. Instead got {str(row[0])}")
+    try:
+        if str(row[0]) != '#':
+            raise Exception(f"Expected '#' at start of header")
 
-    header = {
-        'id': str(row[1:12]),
-        'year': int(row[13:17]),
-        'month': int(row[18:20]),
-        'day': int(row[21:23]),
-        'hour': nullify(int(row[24:26]), 99),
-        'reltime': nullify(int(row[27:31]), 9999),
-        'numlev': int(row[32:36]),
-        'p_src': str(row[37:45]),
-        'np_src': str(row[46:54]),
-        'lat': int(row[55:62]),
-        'lon': int(row[63:71])
-    }
-
-    header['header_id'] = hashlib.sha512(f"{header['id']}{header['year']}{header['month']}{header['day']}{header['reltime']}".encode('utf-8')).hexdigest()[0:11]
-
-    # Ingest header into DB
-    header_query = """
-        mutation upsert_header {
-          insert_header(
-            objects: [
-            {
-                header_id: "$header_id",
-                hour: $hour,
-                lat: $lat,
-                day: $day,
-                id: "$id",
-                lon: $lon,
-                month: $month,
-                np_src: "$np_src",
-                numlev: $numlev,
-                p_src: "$p_src",
-                reltime: $reltime,
-                year: $year
-            }
-            ],
-            on_conflict: {
-                constraint: header_pkey,
-                update_columns: []
-            }
-          ) {
-            returning {
-              header_id,
-              numlev
-            }
-          }
+        # In Python 3.6+, dict elements are in write order.
+        header = {
+            'id': str(row[1:12]),
+            'year': int(row[13:17]),
+            'month': int(row[18:20]),
+            'day': int(row[21:23]),
+            'hour': nullify(int(row[24:26]), 99),
+            'reltime': nullify(int(row[27:31]), 9999),
+            'numlev': int(row[32:36]),
+            'p_src': str(row[37:45]),
+            'np_src': str(row[46:54]),
+            'lat': int(row[55:62]),
+            'lon': int(row[63:71])
         }
-    """
 
-    gq.query(header_query, header)
+        header['header_id'] = hashlib.sha512(f"{header['id']}${header['year']}${header['month']}${header['day']}${header['hour']}${header['reltime']}".encode('utf-8')).hexdigest()[0:11]
+
+        file.writerow([header[r] for r in header])
+    except Exception as e:
+        raise Exception(f"On row '{str(row)}'\n{e}")
 
     return header['header_id'], header['numlev']
 
-def parse_level(header_id, row):
+def parse_level(header_id, row, file):
     """
     LVLTYP1         1-  1   Integer
     LVLTYP2         2-  2   Integer
@@ -141,58 +112,30 @@ def parse_level(header_id, row):
     WSPD           47- 51   Integer
     """
 
-    level = {
-        'header_id': header_id,
-        'lvltyp1': int(row[0]),
-        'lvltyp2': int(row[1]),
-        'etime': nullify(int(row[3:8]), [-9999, -8888]),
-        'press': nullify(int(row[9:15]), -9999),
-        'pflag': str(row[15]),
-        'gph': nullify(int(row[16:21]), [-9999, -8888]),
-        'zflag': str(row[21]),
-        'temp': nullify(int(row[22:27]), [-9999, -8888]),
-        'tflag': str(row[27]),
-        'rh': nullify(int(row[28:33]), [-9999, -8888]),
-        'dpdp': nullify(int(row[34:39]), [-9999, -8888]),
-        'wdir': nullify(int(row[40:45]), [-9999, -8888]),
-        'wspd': nullify(int(row[46:51]), [-9999, -8888])
-    }
+    try:
+        if row[0] == '#':
+            raise Exception("'#' found at beginning of level.")
 
-    # Ingest levels into DB
-    level_query = """
-        mutation upsert_levels {
-          insert_levels(
-            objects: [
-            {
-                dpdp: $dpdp,
-                etime: $etime,
-                gph: $gph,
-                header_id: "$header_id",
-                lvltyp1: $lvltyp1,
-                lvltyp2: $lvltyp2,
-                pflag: "$pflag",
-                press: $press,
-                rh: $rh,
-                temp: $temp,
-                tflag: "$tflag",
-                wdir: $wdir,
-                wspd: $wspd,
-                zflag: "$zflag"
-            }],
-            on_conflict: {
-                constraint: levels_pkey,
-                update_columns: []
-            }
-          ) {
-            returning {
-                header_id,
-                level_id
-            }
-          }
+        level = {
+            'header_id': header_id,
+            'lvltyp1': int(row[0]),
+            'lvltyp2': int(row[1]),
+            'etime': nullify(int(row[3:8]), [-9999, -8888]),
+            'press': nullify(int(row[9:15]), -9999),
+            'pflag': str(row[15]),
+            'gph': nullify(int(row[16:21]), [-9999, -8888]),
+            'zflag': str(row[21]),
+            'temp': nullify(int(row[22:27]), [-9999, -8888]),
+            'tflag': str(row[27]),
+            'rh': nullify(int(row[28:33]), [-9999, -8888]),
+            'dpdp': nullify(int(row[34:39]), [-9999, -8888]),
+            'wdir': nullify(int(row[40:45]), [-9999, -8888]),
+            'wspd': nullify(int(row[46:51]), [-9999, -8888])
         }
-    """
 
-    gq.query(level_query, level)
+        file.writerow([level[r] for r in level])
+    except Exception as e:
+        raise Exception(f"\nOn level '{str(level)}'\n{e}")
 
 def parse_and_ingest(file_name):
 
@@ -201,52 +144,64 @@ def parse_and_ingest(file_name):
     parse = Parser(file_name)
 
     print("Parse and ingest file...")
-    with open(file_name, "r") as f:
-        while True:
-            header_id, num_lev = parse_header(f.read(72))  # Includes newline at end
-            parse.line_add_one()
-            for r in range(0, num_lev):
-                parse_level(header_id, f.read(53))  # Includes newline at end
+    with open("header.csv", "w+") as header_file, open("levels.csv", "w+") as levels_file:
+        header_csv = csv.writer(header_file)
+        levels_csv = csv.writer(levels_file)
+        with open(file_name, "r") as f:
+            while True:
+                header_id, num_lev = parse_header(f.readline(), header_csv)  # Includes newline at end
                 parse.line_add_one()
+                for r in range(0, num_lev):
+                    parse_level(header_id, f.readline(), levels_csv)  # Includes newline at end
+                    parse.line_add_one()
 
-def setup_db():
-    """
-        CREATE TABLE header (
-            header_id TEXT PRIMARY KEY,
-            id TEXT,
-            year INT,
-            month INT,
-            day INT,
-            hour INT,
-            reltime INT,
-            numlev INT,
-            p_src TEXT,
-            np_src TEXT,
-            lat INT,
-            lon INT
-        );
+"""
+    In Hasura:
+    CREATE TABLE header (
+        id TEXT,
+        year INT,
+        month INT,
+        day INT,
+        hour INT,
+        reltime INT,
+        numlev INT,
+        p_src TEXT,
+        np_src TEXT,
+        lat INT,
+        lon INT,
+        header_id TEXT PRIMARY KEY
+    );
 
-        CREATE TABLE
-        levels (
-            level_id SERIAL PRIMARY KEY,
-            header_id TEXT REFERENCES header(header_id),
-            lvltyp1 INT,
-            lvltyp2 INT,
-            etime INT,
-            press INT,
-            pflag TEXT,
-            gph INT,
-            zflag TEXT,
-            temp INT,
-            tflag TEXT,
-            rh INT,
-            dpdp INT,
-            wdir INT,
-            wspd INT
-        );
-    """
+    CREATE TABLE
+    levels (
+        level_id SERIAL PRIMARY KEY,
+        header_id TEXT REFERENCES header(header_id),
+        lvltyp1 INT,
+        lvltyp2 INT,
+        etime INT,
+        press INT,
+        pflag TEXT,
+        gph INT,
+        zflag TEXT,
+        temp INT,
+        tflag TEXT,
+        rh INT,
+        dpdp INT,
+        wdir INT,
+        wspd INT
+    );
 
-    # !!! AFTER CREATING TABLES, GO TO HASURA'S UI AND ADD TABLES TO SCHEMA
+    Make sure that there is no untracked keys
+
+    On Command line:
+    (75 seconds) python3 radiosonde.py -f $file
+    (~1 second) sudo cp header.csv data/db_sym/header.csv
+    (2 seconds) sudo cp levels.csv data/db_sym/levels.csv
+
+    Within Hasura:
+    (1 second) COPY header(id, year, month, day, hour, reltime, numlev, p_src, np_src, lat, lon, header_id) from '/var/lib/postgresql/header.csv' NULL as 'null' CSV;
+    (70 seconds) COPY levels(header_id, lvltyp1, lvltyp2, etime, press, pflag, gph, zflag, temp, tflag, rh, dpdp, wdir, wspd) from '/var/lib/postgresql/levels.csv' NULL as 'null' CSV;
+"""
 
 if __name__ == '__main__':
 
