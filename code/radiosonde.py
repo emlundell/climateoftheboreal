@@ -4,54 +4,21 @@ import argparse
 import hashlib
 from time import localtime, strftime, mktime
 from datetime import timedelta
-import multiprocessing as mp
 
 import graphql as gq
 
+class Parser():
 
-"""
-    CREATE TABLE header (
-        header_id TEXT PRIMARY KEY,
-        id TEXT,
-        year INT,
-        month INT,
-        day INT,
-        hour INT,
-        reltime INT,
-        numlev INT,
-        p_src TEXT,
-        np_src TEXT,
-        lat INT,
-        lon INT
-    );
+    def __init__(self, file_name):
 
-    CREATE TABLE
-    levels (
-        level_id SERIAL PRIMARY KEY,
-        header_id TEXT REFERENCES header(header_id),
-        lvltyp1 INT,
-        lvltyp2 INT,
-        etime INT,
-        press INT,
-        pflag TEXT,
-        gph INT,
-        zflag TEXT,
-        temp INT,
-        tflag TEXT,
-        rh INT,
-        dpdp INT,
-        wdir INT,
-        wspd INT
-    );
-"""
+        self.file_name = file_name
 
-
-class Timer():
-
-    def __init__(self, filename, total_num_records):
-
-        self.file_name = filename
-        self.total_num_records = total_num_records
+        print("Get total number of lines in file...")
+        with open(self.file_name, "r") as f:
+            for total_num_lines, l in enumerate(f, 1):
+                pass
+        print(f"Total number of lines in file: {total_num_lines}")
+        self.total_num_lines = total_num_lines
         self.line_count = 0
 
         self._start_time()
@@ -72,9 +39,7 @@ class Timer():
     def line_add_one(self):
         self.line_count += 1
         if self.line_count % 1000 == 0:
-            end_time = localtime()
-            elasped_secs = mktime(end_time) - mktime(self.start_time)
-            print(f"Process applied line {self.line_count} of {self.total_num_records} about {timedelta(seconds=elasped_secs)} seconds since starting")
+            print(f"Processed line {self.line_count} of {self.total_num_lines}")
 
 def nullify(value, nully):
     if not isinstance(nully, list):
@@ -229,19 +194,59 @@ def parse_level(header_id, row):
 
     gq.query(level_query, level)
 
-def parse_and_ingest(record, i, total_num_records):
-    if i % 1000 == 0:
-        print(f"Starting to process record {i} of {total_num_records}")
-    pos1, pos2 = 0, 72
-    header_id, num_lev = parse_header(record[pos1:pos2])  # Includes newline at end
-    for r in range(0, num_lev):
-        pos1, pos2 = pos2, pos2+53
-        parse_level(header_id, record[pos1:pos2])  # Includes newline at end
+def parse_and_ingest(file_name):
 
-def get_pounds(pounds):
-    r = len(pounds)
-    for i in range(r-1):
-        yield pounds[i], pounds[i+1]
+    # Open radiosonde file
+    # It is assumed that the file always starts with a header
+    parse = Parser(file_name)
+
+    print("Parse and ingest file...")
+    with open(file_name, "r") as f:
+        while True:
+            header_id, num_lev = parse_header(f.read(72))  # Includes newline at end
+            parse.line_add_one()
+            for r in range(0, num_lev):
+                parse_level(header_id, f.read(53))  # Includes newline at end
+                parse.line_add_one()
+
+def setup_db():
+    """
+        CREATE TABLE header (
+            header_id TEXT PRIMARY KEY,
+            id TEXT,
+            year INT,
+            month INT,
+            day INT,
+            hour INT,
+            reltime INT,
+            numlev INT,
+            p_src TEXT,
+            np_src TEXT,
+            lat INT,
+            lon INT
+        );
+
+        CREATE TABLE
+        levels (
+            level_id SERIAL PRIMARY KEY,
+            header_id TEXT REFERENCES header(header_id),
+            lvltyp1 INT,
+            lvltyp2 INT,
+            etime INT,
+            press INT,
+            pflag TEXT,
+            gph INT,
+            zflag TEXT,
+            temp INT,
+            tflag TEXT,
+            rh INT,
+            dpdp INT,
+            wdir INT,
+            wspd INT
+        );
+    """
+
+    # !!! AFTER CREATING TABLES, GO TO HASURA'S UI AND ADD TABLES TO SCHEMA
 
 if __name__ == '__main__':
 
@@ -250,26 +255,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.file_name:
-
-        # Get line numbers where the headers start
-        pounds = []
-        total_num_records = 0
-        with open(args.file_name, "r") as f:
-            while True:
-                try:
-                    line = f.readline()
-                    if line[0] == '#':
-                        total_num_records += 1
-                        pounds.append(f.tell()-72)
-                except:
-                    break
-
-        tim = Timer(args.file_name, total_num_records)
-        with mp.Pool() as pool:
-            with open(args.file_name, "r") as f:
-                for i, (this, next) in enumerate(get_pounds(pounds)):
-                    f.seek(this)
-                    record = f.read(next-this)
-
-                    pool.apply(parse_and_ingest, [record, i, total_num_records])
-                    tim.line_add_one()
+        parse_and_ingest(args.file_name)
