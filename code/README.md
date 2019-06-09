@@ -59,17 +59,17 @@ https://docs.hasura.io/1.0/graphql/manual/getting-started/docker-simple.html
   ```
 
 1. Install dependencies
-  `sudo pipenv install requests jupyter pandas cufflinks plotly`
+  `pipenv install requests jupyter pandas altair vega_datasets vega altair_recipes`
 
 1. To uninstall pipenv environments:
 
-  `sudo pipenv --rm`
+  `pipenv --rm`
 
 1. Start pipenv shell
 
   `pipenv shell`
 
-1. Set some python paths. Need to do this whenever a new shell is created
+1. Set some python paths. Add the following to _$HOME/.bashrc_ and _source $HOME/.bashrc_.
 
   `export PYTHONPATH=$PYTHONPATH:$HOME/GIT/climateoftheboreal/lib/`
 

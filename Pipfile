@@ -11,6 +11,10 @@ requests = "*"
 jupyter = "*"
 cufflinks = "*"
 plotly = "*"
+altair = "*"
+vega-datasets = "*"
+vega = "*"
+altair-recipes = "*"
 
 [requires]
 python_version = "3.6"

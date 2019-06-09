@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f948093827d41a4c04a6b878cd0fdf94e8e0c140954c89512e6dbabadc667e72"
+            "sha256": "3411d9f3303c36452e2250be0afa62c3bbfdc96ab5d9b912cd19022cb4292c7a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,12 +16,35 @@
         ]
     },
     "default": {
+        "altair": {
+            "hashes": [
+                "sha256:77bf6baee04135cc37a20edd07820163336e2d2bb240804473e80dbefcb4bffd",
+                "sha256:f711ca44cc569eaec5ae8eafa610146c18b23a0ba4f7b9900646b28c42c13b9f"
+            ],
+            "index": "pypi",
+            "version": "==3.1.0"
+        },
+        "altair-recipes": {
+            "hashes": [
+                "sha256:22bf9f1d889c210fa977602b8537e412aaf3f00b3234ea65c4aaa66203bd056e",
+                "sha256:8060e82983cb2940c5a08b3ed297f4e74e4a21a7f2d3ad0a9613070327bbdd4b"
+            ],
+            "index": "pypi",
+            "version": "==0.6.0"
+        },
         "attrs": {
             "hashes": [
                 "sha256:69c0dbf2ed392de1cb5ec704444b08a5ef81680a61cb899dc08127123af36a79",
                 "sha256:f0b870f674851ecbfbbbd364d6b5cbdff9dcedbc7f3f5e18a6891057f21fe399"
             ],
             "version": "==19.1.0"
+        },
+        "autosig": {
+            "hashes": [
+                "sha256:6642cdfa43a2f6a491a48f3194536e8c5d51fe30d50e9041f463052a5026bb2f",
+                "sha256:b9e0540234cebcdda8f55ef9446438024e39448aacdfda354283a6aaebbfe49f"
+            ],
+            "version": "==0.7.0"
         },
         "backcall": {
             "hashes": [
@@ -36,6 +59,13 @@
                 "sha256:3fdf7f77adcf649c9911387df51254b813185e32b2c6619f690b593a617e19fa"
             ],
             "version": "==3.1.0"
+        },
+        "boltons": {
+            "hashes": [
+                "sha256:7aa10b0f5b015678458a7d0422961fc0c7e823c05e644094c0e564931ce0b0df",
+                "sha256:c32b2d121331a9bc7c220050d4273f3aa359b7569cb4794188e71524603113dc"
+            ],
+            "version": "==19.1.0"
         },
         "certifi": {
             "hashes": [
@@ -326,9 +356,9 @@
         },
         "prometheus-client": {
             "hashes": [
-                "sha256:1b38b958750f66f208bcd9ab92a633c0c994d8859c831f7abc1f46724fcee490"
+                "sha256:ee0c90350595e4a9f36591f291e6f9933246ea67d7cd7d1d6139a9781b14eaae"
             ],
-            "version": "==0.6.0"
+            "version": "==0.7.0"
         },
         "prompt-toolkit": {
             "hashes": [
@@ -452,6 +482,12 @@
             ],
             "version": "==0.4.2"
         },
+        "toolz": {
+            "hashes": [
+                "sha256:929f0a7ea7f61c178bd951bdae93920515d3fbdbafc8e6caf82d752b9b3b31c9"
+            ],
+            "version": "==0.9.0"
+        },
         "tornado": {
             "hashes": [
                 "sha256:1174dcb84d08887b55defb2cda1986faeeea715fff189ef3dc44cce99f5fca6b",
@@ -477,6 +513,21 @@
                 "sha256:dbe59173209418ae49d485b87d1681aefa36252ee85884c31346debd19463232"
             ],
             "version": "==1.25.3"
+        },
+        "vega": {
+            "hashes": [
+                "sha256:4d7269756a190edb8e99ce9ce225bc7609d4c124e9fdf89c0a6c6d77ca7ade1d"
+            ],
+            "index": "pypi",
+            "version": "==2.2.0"
+        },
+        "vega-datasets": {
+            "hashes": [
+                "sha256:20d490b417f84607eb5079400f608f2e9c135b7092bee10f6857f6d23136e459",
+                "sha256:63d6eaf129ab23a7d0744e54d11dba9e7eecc0974fd9a237cfae9cfdbef3c37a"
+            ],
+            "index": "pypi",
+            "version": "==0.7.0"
         },
         "wcwidth": {
             "hashes": [
