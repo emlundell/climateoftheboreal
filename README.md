@@ -107,6 +107,8 @@ query = """
 """
 
 df = gq.query(query, top='levels')
+
+Here returns a Pandas dataframe containing the data with levels.
 ```
 
 ## Data
