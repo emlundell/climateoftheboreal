@@ -4,7 +4,7 @@ services:
     image: postgres
     restart: always
     volumes:
-    - /home/eric/GIT/climateoftheboreal/code/data/db_sym/:/var/lib/postgresql/
+    - {$PWD}/code/data/db_sym/:/var/lib/postgresql/
   graphql-engine:
     image: hasura/graphql-engine:v1.0.0-beta.2
     ports:
